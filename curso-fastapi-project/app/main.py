@@ -1,19 +1,30 @@
 import zoneinfo
 from datetime import datetime
-from fastapi import FastAPI
-from models import Transaction
+from typing import Annotated
+
+from fastapi import FastAPI, status, HTTPException
+from fastapi.params import Depends
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+
 from db import create_all_tables
-from .routers import customers, invoices, transactions
+from .routers import plans, customers, invoices, transactions
 
 
 app = FastAPI(lifespan=create_all_tables)
 app.include_router(customers.router)
 app.include_router(invoices.router)
 app.include_router(transactions.router)
+app.include_router(plans.router)
+
+security = HTTPBasic()
 
 @app.get("/")
-async def root():
-    return {"message": "Hello World"}
+async def root(credentials: Annotated[HTTPBasicCredentials, Depends(security)]):
+    print(credentials)
+    if credentials.username == "haroldcv2" and credentials.password == "supersecret":
+        return {"message": f"Hello, {credentials.username}!"}
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
 
 country_codes = {
